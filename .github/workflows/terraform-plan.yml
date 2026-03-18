@@ -21,7 +21,7 @@ env:
 
 jobs:
   plan:
-    name: Terraform Validate & Plan
+    name: Terraform Plan
     runs-on: ubuntu-latest
 
     steps:
@@ -47,14 +47,6 @@ jobs:
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init -input=false
-
-      - name: Terraform Format Check
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform fmt -check -recursive
-
-      - name: Terraform Validate
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform validate
 
       - name: Terraform Plan
         id: plan
@@ -96,3 +88,4 @@ jobs:
       - name: Fail if plan failed
         if: steps.plan.outcome == 'failure'
         run: exit 1
+

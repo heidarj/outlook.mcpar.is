@@ -1,0 +1,42 @@
+name: Terraform Validate
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform-validate.yml"
+  push:
+    paths:
+      - "infra/terraform/**"
+
+permissions:
+  contents: read
+
+env:
+  TF_WORKING_DIR: infra/terraform
+
+jobs:
+  validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # Skip backend initialisation so this job needs no cloud credentials.
+      # Validation only checks syntax and internal consistency.
+      - name: Terraform Init (no backend)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform Format Check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
