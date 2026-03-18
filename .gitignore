@@ -52,3 +52,21 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+crash.log
+crash.*.log
+# Sensitive variable files — never commit these
+*.tfvars
+*.tfvars.json
+# Override files — local only
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# The .terraform.lock.hcl should be committed for reproducible builds
+# (it is intentionally NOT listed here)

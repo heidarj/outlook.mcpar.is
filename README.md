@@ -114,4 +114,112 @@ tests/OutlookMcp.Server.Tests/
   Models/              # DTO tests
   Services/            # Graph service / pagination tests
   Tools/               # Tool validation tests
+
+infra/terraform/       # Terraform infrastructure code
+docs/bootstrap.md      # Bootstrap / first-time setup guide
+Dockerfile             # Multi-stage container image build
 ```
+
+---
+
+## Infrastructure
+
+The app runs on **Azure Container Apps Consumption** and is deployed via
+**GitHub Actions**. Terraform state is stored in **HCP Terraform** (remote
+state only; plan/apply runs in GitHub Actions). Secrets are stored in **Azure
+Key Vault**. Container images are hosted in **GitHub Container Registry
+(GHCR)**.
+
+### Architecture overview
+
+```
+GitHub Actions
+  ├── terraform-plan.yml   → runs on PRs that touch infra/terraform/
+  ├── terraform-apply.yml  → runs on merge to main (gated by "production" env)
+  └── deploy.yml           → builds image, pushes to GHCR, deploys to ACA
+
+Azure
+  ├── Resource Group
+  ├── User-Assigned Managed Identity  (for Key Vault access)
+  ├── Key Vault Standard              (stores Entra client secret + GHCR PAT)
+  └── Container Apps Environment
+        └── Container App (API)
+              ├── 0.25 vCPU / 0.5 GiB
+              ├── minReplicas = 0  /  maxReplicas = 2
+              ├── Cron scale rule: 1 replica Mon–Fri 08:00–18:00 UTC
+              └── HTTP scale rule: scale out at 10 concurrent requests
+
+Microsoft Entra
+  └── App Registration + Service Principal + client secret (1-year rotation)
+```
+
+### Scaling behaviour
+
+| Time window | Replicas |
+|-------------|----------|
+| Mon–Fri 08:00–18:00 UTC | 1 (warm) |
+| Outside working hours | 0 (scale to zero) |
+| Under HTTP load (any time) | up to 2 |
+
+### Required GitHub Actions configuration
+
+#### Repository variables (`Settings → Secrets and variables → Actions → Variables`)
+
+| Variable | Description |
+|----------|-------------|
+| `AZURE_CLIENT_ID` | Client ID of the GitHub Actions OIDC service principal |
+| `AZURE_TENANT_ID` | Azure AD tenant ID |
+| `AZURE_SUBSCRIPTION_ID` | Azure subscription ID |
+| `GHCR_USERNAME` | GitHub username / org owning the GHCR package (lower-case) |
+| `CONTAINER_APP_NAME` | Name of the Container App (Terraform output: `container_app_name`) |
+| `RESOURCE_GROUP_NAME` | Name of the resource group (Terraform output: `resource_group_name`) |
+
+#### Repository secrets
+
+| Secret | Description |
+|--------|-------------|
+| `TF_API_TOKEN` | HCP Terraform API token (for remote state access) |
+| `GHCR_PAT` | GitHub PAT with `read:packages` (passed to Terraform to configure GHCR pull credentials on the Container App) |
+
+### HCP Terraform — state only
+
+HCP Terraform is used **exclusively for remote state storage**. Plans and
+applies run locally in GitHub Actions runners, not on HCP Terraform. The HCP
+Terraform workspace must have its **Execution Mode set to Local**.
+
+Update `infra/terraform/versions.tf` with your HCP Terraform organisation and
+workspace name before the first run.
+
+### GitHub OIDC → Azure
+
+No long-lived Azure credentials are stored in GitHub. The GitHub Actions
+workflows authenticate to Azure using **OIDC federated identity**. The
+federated credentials must be created once on the Azure AD app that represents
+the GitHub Actions identity. See [docs/bootstrap.md](docs/bootstrap.md) for
+step-by-step instructions.
+
+### Deployment flow
+
+1. A developer pushes code to `main`.
+2. The **Build and Deploy** workflow:
+   a. Builds the .NET app and runs tests.
+   b. Builds the Docker image and pushes it to GHCR with the commit SHA as the
+      tag (e.g. `ghcr.io/heidarj/outlook-mcpar-is:sha-<sha>`).
+   c. Runs `az containerapp update --image <new-image>` to create a new
+      Container App revision.
+3. Azure Container Apps performs a zero-downtime rolling update to the new
+   revision.
+
+Terraform manages infrastructure (Key Vault, identity, scaling rules, etc.)
+but does **not** manage the running image tag — that is owned by the deploy
+workflow.
+
+### What is intentionally not deployed yet
+
+| Feature | Reason |
+|---------|--------|
+| Custom domain / TLS certificate | Not required for v1; placeholder ingress block ready |
+| Application Insights | Unnecessary cost for current scale |
+| Log Analytics workspace (retained logs) | Unnecessary cost; streaming logs sufficient |
+| Multiple environments (staging, etc.) | Not needed for v1; Terraform structure supports it |
+| Azure Container Registry | GHCR is free for public/private repos at this scale |
