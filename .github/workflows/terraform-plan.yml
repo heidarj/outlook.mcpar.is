@@ -46,7 +46,11 @@ jobs:
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
+        run: |
+          terraform init -input=false \
+            -backend-config="hostname=${{ vars.TF_BACKEND_HOSTNAME }}" \
+            -backend-config="organization=${{ vars.TF_BACKEND_ORGANIZATION }}" \
+            -backend-config="workspaces=[{name=\"${{ vars.TF_BACKEND_WORKSPACE }}\"}]"
 
       - name: Terraform Plan
         id: plan

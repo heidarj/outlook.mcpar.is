@@ -28,14 +28,14 @@ You also need:
 
 1. Sign in to <https://app.terraform.io>.
 2. Create a new workspace in your organisation:
-   - **Name:** `outlook-mcpar-is-prod` (or another name — must match `versions.tf`)
+   - **Name:** `outlook-mcpar-is-prod` (or a name of your choice)
    - **Execution mode:** **Local** — this is critical. Plans and applies run in
      GitHub Actions; HCP Terraform is used for remote state only.
 3. Generate an **API token** for the workspace:
    - Go to **User Settings → Tokens → Create an API token**.
    - Store this token as a GitHub Actions secret named `TF_API_TOKEN`.
-4. Update `infra/terraform/versions.tf` with your organisation and workspace
-   name, then commit.
+4. Note your **organisation name**, **workspace name**, and the backend hostname
+   (`app.terraform.io`). You will set these as GitHub Actions variables in Step 4.
 
 ---
 
@@ -148,6 +148,9 @@ Personal Access Token is required.
 | `GHCR_USERNAME` | GitHub username / org that owns the GHCR package (lower-case) |
 | `CONTAINER_APP_NAME` | `ca-outlook-mcp-prod-api` (matches `locals.ca_name` in Terraform) |
 | `RESOURCE_GROUP_NAME` | `rg-outlook-mcp-prod` (matches `locals.rg_name` in Terraform) |
+| `TF_BACKEND_HOSTNAME` | `app.terraform.io` |
+| `TF_BACKEND_ORGANIZATION` | Your HCP Terraform organisation name |
+| `TF_BACKEND_WORKSPACE` | Your HCP Terraform workspace name (e.g. `outlook-mcpar-is-prod`) |
 
 > **Note:** `CONTAINER_APP_NAME` and `RESOURCE_GROUP_NAME` must match the
 > resource names that Terraform will create. By default these are derived from
@@ -182,8 +185,13 @@ cd infra/terraform
 az login
 az account set --subscription "<your-subscription-id>"
 
-# Initialise — this connects to HCP Terraform for remote state
-terraform init
+# Initialise — this connects to HCP Terraform for remote state.
+# Supply backend config via -backend-config (hostname / org / workspace are
+# not hardcoded in the repo; the HCP token is read from ~/.terraform.d/credentials.tfrc.json).
+terraform init \
+  -backend-config="hostname=app.terraform.io" \
+  -backend-config="organization=<your-hcp-org>" \
+  -backend-config='workspaces=[{name="<your-workspace-name>"}]'
 
 # Review what will be created
 terraform plan \
@@ -231,7 +239,7 @@ Run workflow**.
 | Rotate the Entra client secret | Run `terraform apply` — `azuread_application_password.api` has a 1-year TTL |
 | Change container size / scaling | Edit `container_app.tf`, commit, push to `main` |
 | Add a custom domain | Add `custom_domain` block to the `ingress {}` in `container_app.tf` |
-| Add a new environment | Create a new workspace in HCP Terraform, copy the Terraform directory, update `versions.tf` |
+| Add a new environment | Create a new workspace in HCP Terraform, copy the Terraform directory, set the new backend variables in a new GitHub environment |
 
 ---
 

@@ -19,12 +19,9 @@ terraform {
   # HCP Terraform — used for remote state only.
   # Set execution mode to "Local" in the HCP Terraform workspace so that
   # plan/apply run in GitHub Actions, not on HCP Terraform runners.
-  # Replace the organization and workspace name with your own values.
-  backend "remote" {
-    hostname     = "app.terraform.io"
-    organization = "YOUR_HCP_ORG" # TODO: replace with your HCP Terraform organisation
-    workspaces {
-      name = "outlook-mcpar-is-prod" # TODO: replace with your workspace name
-    }
-  }
+  # Backend config (hostname, organization, workspace) is supplied at
+  # init time via -backend-config flags in the GitHub Actions workflows.
+  # The HCP Terraform token is supplied by hashicorp/setup-terraform via
+  # cli_config_credentials_token and must NOT be passed via -backend-config.
+  backend "remote" {}
 }
