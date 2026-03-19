@@ -13,7 +13,7 @@ public class OAuthDiscoveryEndpointTests
     private const string ClientId = "test-client-id";
     private const string TenantId = "test-tenant-id";
     private const string McpBaseUrl = "https://mcp.example.com";
-    private const string ProxyHttpClientName = "OAuthMetadataProxy";
+    private const string ProxyHttpClientName = "OAuthMetadataHttpClient";
 
     [Fact]
     public async Task ProtectedResource_ReturnsConfiguredMetadata_AndCorsHeader()

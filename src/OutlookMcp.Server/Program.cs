@@ -8,7 +8,7 @@ using OutlookMcp.Server.Tools;
 
 var builder = WebApplication.CreateBuilder(args);
 const string OAuthDiscoveryCorsPolicy = "OAuthDiscovery";
-const string OAuthMetadataHttpClient = "OAuthMetadataProxy";
+const string OAuthMetadataHttpClient = "OAuthMetadataHttpClient";
 
 builder.Services.AddOptions<AzureAdOptions>()
     .Bind(builder.Configuration.GetSection("AzureAd"))
