@@ -20,6 +20,8 @@ resource "azuread_application" "api" {
 
   # Expose a single delegated scope that client apps request.
   api {
+    requested_access_token_version = 2
+
     oauth2_permission_scope {
       admin_consent_description  = "Access the outlook.mcpar.is MCP API on behalf of the signed-in user"
       admin_consent_display_name = "Access outlook.mcpar.is"
