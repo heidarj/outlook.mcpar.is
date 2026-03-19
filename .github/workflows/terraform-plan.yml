@@ -23,6 +23,7 @@ jobs:
   plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Checkout repository
@@ -47,10 +48,14 @@ jobs:
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          terraform init -input=false \
-            -backend-config="hostname=${{ vars.TF_BACKEND_HOSTNAME }}" \
-            -backend-config="organization=${{ vars.TF_BACKEND_ORGANIZATION }}" \
-            -backend-config="workspaces=[{name=\"${{ vars.TF_BACKEND_WORKSPACE }}\"}]"
+          cat > backend.hcl << EOF
+          hostname     = "${{ vars.TF_BACKEND_HOSTNAME }}"
+          organization = "${{ vars.TF_BACKEND_ORGANIZATION }}"
+          workspaces {
+            name = "${{ vars.TF_BACKEND_WORKSPACE }}"
+          }
+          EOF
+          terraform init -input=false -backend-config=backend.hcl
 
       - name: Terraform Plan
         id: plan

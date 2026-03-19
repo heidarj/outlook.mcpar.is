@@ -24,6 +24,7 @@ jobs:
   build:
     name: Build & Push Image
     runs-on: ubuntu-latest
+    environment: production
     outputs:
       image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
 
