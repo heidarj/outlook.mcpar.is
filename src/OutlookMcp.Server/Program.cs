@@ -90,7 +90,7 @@ static string GetResourceBaseUrl(HttpContext context, McpServerOptions options)
         return options.BaseUrl.TrimEnd('/');
     }
 
-    return $"{context.Request.Scheme}://{context.Request.Host.Value}".TrimEnd('/');
+    return $"{context.Request.Scheme}://{context.Request.Host.Value}";
 }
 
 app.UseForwardedHeaders();

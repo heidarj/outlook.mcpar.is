@@ -71,6 +71,9 @@ Copy `appsettings.example.json` to `src/OutlookMcp.Server/appsettings.json` and 
 
 `McpServer:BaseUrl` is optional. If it is not configured, the OAuth discovery
 endpoints infer the public base URL from the incoming request host and scheme.
+When the server runs behind a proxy or load balancer, forwarded
+`X-Forwarded-Host` and `X-Forwarded-Proto` headers are respected for this
+inference.
 
 ## Running
 
