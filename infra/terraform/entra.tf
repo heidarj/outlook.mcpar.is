@@ -18,10 +18,6 @@ resource "azuread_application" "api" {
   display_name     = var.entra_app_display_name
   sign_in_audience = "AzureADandPersonalMicrosoftAccount"
 
-  # Application ID URI is set after creation via the identifier_uris argument.
-  # It will be "api://<client_id>" once known.
-  identifier_uris = ["api://${azuread_application.api.client_id}"]
-
   # Expose a single delegated scope that client apps request.
   api {
     oauth2_permission_scope {
@@ -54,6 +50,14 @@ resource "azuread_application" "api" {
       }
     }
   }
+}
+
+# Set the Application ID URI after the app exists so we can safely use the
+# generated client ID without creating a self-reference in the application
+# resource itself.
+resource "azuread_application_identifier_uri" "api" {
+  application_id = azuread_application.api.id
+  identifier_uri = "api://${azuread_application.api.client_id}"
 }
 
 # ── Service principal ─────────────────────────────────────────────────────────
