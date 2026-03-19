@@ -5,9 +5,6 @@ on:
     paths:
       - "infra/terraform/**"
       - ".github/workflows/terraform-validate.yml"
-  push:
-    paths:
-      - "infra/terraform/**"
 
 permissions:
   contents: read
