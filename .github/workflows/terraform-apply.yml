@@ -1,0 +1,57 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/terraform/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # Required for Azure OIDC authentication
+
+env:
+  TF_WORKING_DIR: infra/terraform
+
+jobs:
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    # The "production" environment adds a manual approval gate.
+    # Configure it under Settings → Environments → production.
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init -input=false \
+            -backend-config="hostname=${{ vars.TF_BACKEND_HOSTNAME }}" \
+            -backend-config="organization=${{ vars.TF_BACKEND_ORGANIZATION }}" \
+            -backend-config="workspaces=[{name=\"${{ vars.TF_BACKEND_WORKSPACE }}\"}]"
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -input=false -auto-approve
+        env:
+          TF_VAR_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_tenant_id: ${{ vars.AZURE_TENANT_ID }}
+          TF_VAR_ghcr_username: ${{ vars.GHCR_USERNAME }}
+          TF_VAR_ghcr_pat: ${{ secrets.GHCR_PAT }}

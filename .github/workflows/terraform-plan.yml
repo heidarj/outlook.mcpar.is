@@ -1,0 +1,95 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform-plan.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/terraform/**"
+
+permissions:
+  contents: read
+  id-token: write      # Required for Azure OIDC authentication
+  pull-requests: write # Required to post plan output as a PR comment
+
+env:
+  TF_WORKING_DIR: infra/terraform
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Authenticate to Azure using OIDC federated identity.
+      # No long-lived secrets are stored in GitHub.
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Set up Terraform and configure credentials for the HCP Terraform
+      # remote state backend.
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init -input=false \
+            -backend-config="hostname=${{ vars.TF_BACKEND_HOSTNAME }}" \
+            -backend-config="organization=${{ vars.TF_BACKEND_ORGANIZATION }}" \
+            -backend-config="workspaces=[{name=\"${{ vars.TF_BACKEND_WORKSPACE }}\"}]"
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -input=false -no-color -out=tfplan
+        env:
+          TF_VAR_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_tenant_id: ${{ vars.AZURE_TENANT_ID }}
+          TF_VAR_ghcr_username: ${{ vars.GHCR_USERNAME }}
+          TF_VAR_ghcr_pat: ${{ secrets.GHCR_PAT }}
+        continue-on-error: true
+
+      # Post the plan output back to the PR as a comment so reviewers can
+      # see exactly what will change before approving.
+      - name: Post plan to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### Terraform Plan 📖
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+      - name: Fail if plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
