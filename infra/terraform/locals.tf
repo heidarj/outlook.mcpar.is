@@ -4,7 +4,7 @@ locals {
 
   # Resource-type prefixes follow the Microsoft CAF abbreviations.
   rg_name  = "rg-${local.prefix}"
-  kv_name = "kv-${substr(local.prefix, 0, 15)}-${random_string.suffix.result}"
+  kv_name  = "kv-${substr(local.prefix, 0, 15)}-${random_string.suffix.result}"
   id_name  = "id-${local.prefix}"
   cae_name = "cae-${local.prefix}"
   ca_name  = "ca-${local.prefix}-api"
