@@ -100,6 +100,10 @@ resource "azurerm_container_app" "api" {
         value = "api://${azuread_application.api.client_id}"
       }
       env {
+        name  = "McpServer__BaseUrl"
+        value = var.mcp_server_base_url
+      }
+      env {
         name  = "MicrosoftGraph__BaseUrl"
         value = "https://graph.microsoft.com/v1.0"
       }

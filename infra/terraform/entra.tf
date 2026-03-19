@@ -17,6 +17,20 @@ resource "random_uuid" "api_scope" {}
 resource "azuread_application" "api" {
   display_name     = var.entra_app_display_name
   sign_in_audience = "AzureADandPersonalMicrosoftAccount"
+  fallback_public_client_enabled = true
+
+  web {
+    redirect_uris = [
+      "https://vscode.dev/redirect",
+      "https://claude.ai/api/mcp/auth_callback",
+    ]
+  }
+
+  public_client {
+    redirect_uris = [
+      "http://127.0.0.1:33418",
+    ]
+  }
 
   # Expose a single delegated scope that client apps request.
   api {

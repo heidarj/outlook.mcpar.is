@@ -42,6 +42,11 @@ All tools are read-only and use `$select` to minimize Graph response size.
   - Application ID URI (e.g. `api://<client-id>`)
   - Client secret (for OBO)
   - Delegated permissions: `User.Read`, `Mail.Read`, `Calendars.Read`, `Contacts.Read`, `MailboxSettings.Read`
+  - Redirect URIs:
+    - `http://127.0.0.1:33418`
+    - `https://vscode.dev/redirect`
+    - `https://claude.ai/api/mcp/auth_callback`
+  - **Allow public client flows** enabled
 
 ## Configuration
 
@@ -55,6 +60,9 @@ Copy `appsettings.example.json` to `src/OutlookMcp.Server/appsettings.json` and 
     "ClientId": "<your-api-client-id>",
     "ClientSecret": "<your-api-client-secret>",
     "Audience": "api://<your-api-client-id>"
+  },
+  "McpServer": {
+    "BaseUrl": "https://ca-outlook-mcp-prod-api.nicewater-f739de45.northeurope.azurecontainerapps.io"
   },
   "MicrosoftGraph": {
     "BaseUrl": "https://graph.microsoft.com/v1.0",
@@ -94,6 +102,10 @@ Paginated tools (`list_messages`, `list_mail_folders`, `list_calendar_view`, `li
 
 | Endpoint | Description |
 |----------|-------------|
+| `GET /.well-known/oauth-protected-resource` | OAuth protected resource metadata for MCP clients |
+| `GET /.well-known/oauth-authorization-server` | Proxied Entra authorization server metadata with local issuer |
+| `POST /register` | Static OAuth dynamic client registration response |
+| `GET /authorize` | Redirect proxy to the Entra authorize endpoint |
 | `POST /mcp` | MCP endpoint (requires `Authorization: Bearer <token>`) |
 | `GET /health` | Liveness health check |
 | `GET /health/ready` | Readiness health check |
