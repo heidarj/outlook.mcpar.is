@@ -34,12 +34,6 @@ variable "entra_app_display_name" {
   default     = "outlook.mcpar.is API"
 }
 
-variable "mcp_server_base_url" {
-  description = "Public base URL advertised by the MCP server for OAuth discovery."
-  type        = string
-  default     = "https://ca-outlook-mcp-prod-api.nicewater-f739de45.northeurope.azurecontainerapps.io"
-}
-
 # ── GitHub / GHCR ────────────────────────────────────────────────────────────
 
 variable "ghcr_username" {

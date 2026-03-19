@@ -61,15 +61,16 @@ Copy `appsettings.example.json` to `src/OutlookMcp.Server/appsettings.json` and 
     "ClientSecret": "<your-api-client-secret>",
     "Audience": "api://<your-api-client-id>"
   },
-  "McpServer": {
-    "BaseUrl": "https://ca-outlook-mcp-prod-api.nicewater-f739de45.northeurope.azurecontainerapps.io"
-  },
+  "McpServer": {},
   "MicrosoftGraph": {
     "BaseUrl": "https://graph.microsoft.com/v1.0",
     "Scopes": ["User.Read", "Mail.Read", "Calendars.Read", "Contacts.Read", "MailboxSettings.Read"]
   }
 }
 ```
+
+`McpServer:BaseUrl` is optional. If it is not configured, the OAuth discovery
+endpoints infer the public base URL from the incoming request host and scheme.
 
 ## Running
 

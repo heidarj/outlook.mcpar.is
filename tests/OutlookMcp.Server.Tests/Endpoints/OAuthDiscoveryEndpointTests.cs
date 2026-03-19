@@ -80,6 +80,43 @@ public class OAuthDiscoveryEndpointTests
     }
 
     [Fact]
+    public async Task ProtectedResource_UsesRequestUrl_WhenBaseUrlIsNotConfigured()
+    {
+        using var factory = CreateFactory(includeMcpBaseUrl: false);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://connector.example.com")
+        });
+
+        using var response = await client.GetAsync("/.well-known/oauth-protected-resource");
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("https://connector.example.com", json.RootElement.GetProperty("resource").GetString());
+    }
+
+    [Fact]
+    public async Task AuthorizationServerMetadata_UsesRequestUrl_WhenBaseUrlIsNotConfigured()
+    {
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"issuer":"https://login.microsoftonline.com/original/v2.0"}""", Encoding.UTF8, "application/json")
+        });
+
+        using var factory = CreateFactory(handler, includeMcpBaseUrl: false);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://connector.example.com")
+        });
+
+        using var response = await client.GetAsync("/.well-known/oauth-authorization-server");
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("https://connector.example.com", json.RootElement.GetProperty("issuer").GetString());
+    }
+
+    [Fact]
     public async Task Register_ReturnsStaticClientRegistration_WithCorsHeader()
     {
         using var factory = CreateFactory();
@@ -141,22 +178,28 @@ public class OAuthDiscoveryEndpointTests
         Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
     }
 
-    private static WebApplicationFactory<Program> CreateFactory(HttpMessageHandler? metadataHandler = null)
+    private static WebApplicationFactory<Program> CreateFactory(HttpMessageHandler? metadataHandler = null, bool includeMcpBaseUrl = true)
     {
         return new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureAppConfiguration((_, config) =>
                 {
-                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    var settings = new Dictionary<string, string?>
                     {
                         ["AzureAd:Instance"] = "https://login.microsoftonline.com/",
                         ["AzureAd:TenantId"] = TenantId,
                         ["AzureAd:ClientId"] = ClientId,
                         ["AzureAd:Audience"] = $"api://{ClientId}",
-                        ["MicrosoftGraph:BaseUrl"] = "https://graph.microsoft.com/v1.0",
-                        ["McpServer:BaseUrl"] = McpBaseUrl
-                    });
+                        ["MicrosoftGraph:BaseUrl"] = "https://graph.microsoft.com/v1.0"
+                    };
+
+                    if (includeMcpBaseUrl)
+                    {
+                        settings["McpServer:BaseUrl"] = McpBaseUrl;
+                    }
+
+                    config.AddInMemoryCollection(settings);
                 });
 
                 if (metadataHandler is not null)

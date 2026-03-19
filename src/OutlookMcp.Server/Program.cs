@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Identity.Web;
 using Microsoft.Extensions.Options;
 using OutlookMcp.Server.Configuration;
@@ -24,6 +25,13 @@ builder.Services.AddOptions<McpServerOptions>()
     .Bind(builder.Configuration.GetSection("McpServer"))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Auth: JWT bearer + OBO + Graph
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -61,7 +69,6 @@ var app = builder.Build();
 
 var azureAdOptions = app.Services.GetRequiredService<IOptions<AzureAdOptions>>().Value;
 var mcpServerOptions = app.Services.GetRequiredService<IOptions<McpServerOptions>>().Value;
-var resourceBaseUrl = mcpServerOptions.BaseUrl.TrimEnd('/');
 var entraHostBaseUrl = $"{azureAdOptions.Instance.TrimEnd('/')}/{azureAdOptions.TenantId}";
 var authorizationServerUrl = $"{entraHostBaseUrl}/v2.0";
 var openIdConfigurationUrl = $"{authorizationServerUrl}/.well-known/openid-configuration";
@@ -76,16 +83,28 @@ var redirectUris = new[]
 var discoveryEndpoints = app.MapGroup("/.well-known")
     .RequireCors(OAuthDiscoveryCorsPolicy);
 
-discoveryEndpoints.MapGet("/oauth-protected-resource", () => Results.Json(new
+static string GetResourceBaseUrl(HttpContext context, McpServerOptions options)
 {
-    resource = resourceBaseUrl,
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        return options.BaseUrl.TrimEnd('/');
+    }
+
+    return $"{context.Request.Scheme}://{context.Request.Host.Value}".TrimEnd('/');
+}
+
+app.UseForwardedHeaders();
+
+discoveryEndpoints.MapGet("/oauth-protected-resource", (HttpContext context) => Results.Json(new
+{
+    resource = GetResourceBaseUrl(context, mcpServerOptions),
     authorization_servers = new[]
     {
         authorizationServerUrl
     }
 }));
 
-discoveryEndpoints.MapGet("/oauth-authorization-server", async (IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
+discoveryEndpoints.MapGet("/oauth-authorization-server", async (HttpContext context, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
 {
     try
     {
@@ -106,7 +125,7 @@ discoveryEndpoints.MapGet("/oauth-authorization-server", async (IHttpClientFacto
             return Results.StatusCode(StatusCodes.Status502BadGateway);
         }
 
-        metadata["issuer"] = resourceBaseUrl;
+        metadata["issuer"] = GetResourceBaseUrl(context, mcpServerOptions);
 
         return Results.Text(metadata.ToJsonString(), "application/json");
     }
