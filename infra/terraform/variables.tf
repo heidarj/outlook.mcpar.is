@@ -11,7 +11,7 @@ variable "tenant_id" {
 variable "location" {
   description = "Azure region for all resources."
   type        = string
-  default     = "westeurope"
+  default     = "northeurope"
 }
 
 variable "environment" {
