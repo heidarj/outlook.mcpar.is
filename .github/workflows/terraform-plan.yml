@@ -23,6 +23,7 @@ jobs:
   plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - name: Checkout repository
