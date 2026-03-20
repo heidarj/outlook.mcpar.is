@@ -51,4 +51,24 @@ public class AzureAdOptionsTests
 
         Assert.Equal("https://graph.microsoft.com/v1.0", options.BaseUrl);
     }
+
+    [Fact]
+    public void McpServerOptions_Bind_From_Configuration()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["McpServer:BaseUrl"] = "https://example.com"
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddOptions<McpServerOptions>()
+            .Bind(config.GetSection("McpServer"));
+
+        var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<IOptions<McpServerOptions>>().Value;
+
+        Assert.Equal("https://example.com", options.BaseUrl);
+    }
 }
