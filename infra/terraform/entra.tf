@@ -15,8 +15,8 @@ resource "random_uuid" "api_scope" {}
 
 # ── Application registration ─────────────────────────────────────────────────
 resource "azuread_application" "api" {
-  display_name     = var.entra_app_display_name
-  sign_in_audience = "AzureADandPersonalMicrosoftAccount"
+  display_name                   = var.entra_app_display_name
+  sign_in_audience               = "AzureADandPersonalMicrosoftAccount"
   fallback_public_client_enabled = true
 
   web {
