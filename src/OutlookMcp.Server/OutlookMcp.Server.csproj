@@ -9,7 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Graph" Version="5.103.0" />
     <PackageReference Include="Microsoft.Identity.Web" Version="4.5.0" />
-    <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="4.5.0" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.1.0" />
   </ItemGroup>
 
