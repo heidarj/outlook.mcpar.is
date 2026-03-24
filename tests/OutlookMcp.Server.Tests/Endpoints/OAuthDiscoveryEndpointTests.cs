@@ -72,7 +72,7 @@ public class OAuthDiscoveryEndpointTests
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
 
-        var challenge = response.Headers.WwwAuthenticate.Single().ToString();
+        var challenge = Assert.Single(response.Headers.WwwAuthenticate).ToString();
         Assert.Contains("Bearer", challenge);
         Assert.Contains(
             "resource_metadata=\"https://connector.example.com/.well-known/oauth-protected-resource/mcp\"",

@@ -39,6 +39,8 @@ builder.Services.AddAuthentication(options =>
         options.DefaultChallengeScheme = McpAuthenticationDefaults.AuthenticationScheme;
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     })
+    // Resource metadata is configured below through named options so test and environment overrides
+    // are applied after configuration providers have finished loading.
     .AddMcp(_ => { })
     .AddMicrosoftIdentityWebApi(azureAd)
     .EnableTokenAcquisitionToCallDownstreamApi()
