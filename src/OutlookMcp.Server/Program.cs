@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using Microsoft.Extensions.Options;
+using Microsoft.Kiota.Abstractions.Authentication;
 using ModelContextProtocol.AspNetCore.Authentication;
 using ModelContextProtocol.Authentication;
 using OutlookMcp.Server.Configuration;
@@ -44,7 +46,6 @@ builder.Services.AddAuthentication(options =>
     .AddMcp(_ => { })
     .AddMicrosoftIdentityWebApi(azureAd)
     .EnableTokenAcquisitionToCallDownstreamApi()
-    .AddMicrosoftGraph(builder.Configuration.GetSection("MicrosoftGraph"))
     .AddDistributedTokenCaches();
 
 builder.Services.AddOptions<McpAuthenticationOptions>(McpAuthenticationDefaults.AuthenticationScheme)
@@ -80,6 +81,15 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<GraphUserAccessTokenProvider>();
+builder.Services.AddScoped<GraphServiceClient>(serviceProvider =>
+{
+    var graphOptions = serviceProvider.GetRequiredService<IOptions<GraphOptions>>().Value;
+    var tokenProvider = serviceProvider.GetRequiredService<GraphUserAccessTokenProvider>();
+    var authProvider = new BaseBearerTokenAuthenticationProvider(tokenProvider);
+
+    return new GraphServiceClient(authProvider, graphOptions.BaseUrl);
+});
 builder.Services.AddScoped<IGraphService, GraphService>();
 
 builder.Services.AddMcpServer()
