@@ -58,7 +58,8 @@ public class AzureAdOptionsTests
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["McpServer:BaseUrl"] = "https://example.com"
+                ["McpServer:BaseUrl"] = "https://example.com",
+                ["McpServer:ScopeName"] = "Outlook.Access"
             })
             .Build();
 
@@ -70,5 +71,6 @@ public class AzureAdOptionsTests
         var options = provider.GetRequiredService<IOptions<McpServerOptions>>().Value;
 
         Assert.Equal("https://example.com", options.BaseUrl);
+        Assert.Equal("Outlook.Access", options.ScopeName);
     }
 }
