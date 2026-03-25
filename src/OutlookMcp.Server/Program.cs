@@ -58,7 +58,7 @@ builder.Services.AddOptions<McpAuthenticationOptions>(McpAuthenticationDefaults.
         {
             AuthorizationServers = [$"{azureAdValues.Instance.TrimEnd('/')}/{azureAdValues.TenantId}/v2.0"],
             ScopesSupported = [
-                $"api://{azureAdValues.ClientId}/.default"
+                $"api://{azureAdValues.ClientId}/{mcpServerValues.ScopeName}"
             ]
         };
 
