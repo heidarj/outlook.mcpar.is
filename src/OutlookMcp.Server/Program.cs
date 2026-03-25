@@ -57,7 +57,9 @@ builder.Services.AddOptions<McpAuthenticationOptions>(McpAuthenticationDefaults.
         options.ResourceMetadata = new ProtectedResourceMetadata
         {
             AuthorizationServers = [$"{azureAdValues.Instance.TrimEnd('/')}/{azureAdValues.TenantId}/v2.0"],
-            ScopesSupported = [$"api://{azureAdValues.ClientId}/{mcpServerValues.ScopeName}"]
+            ScopesSupported = [
+                $"api://{azureAdValues.ClientId}/.default"
+            ]
         };
 
         if (!string.IsNullOrWhiteSpace(mcpServerValues.BaseUrl))
